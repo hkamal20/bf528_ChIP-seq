@@ -1,0 +1,30 @@
+
+EXTS = ['1.bt2', '2.bt2', '3.bt2', '4.bt2', 'rev.1.bt2', 'rev.2.bt2']
+CONDITION = ['CTL', 'IP']
+REPS = ['rep1', 'rep2']
+
+rule all: 
+	input: 
+		'results/peaks_repr_filtered_annotations.txt', 
+		'samples/GRCm39.primary_assembly.genome.fa', 
+		'results/motifs_dir/'
+
+
+rule annotate_peaks:
+	input: peaks = 'results/filtered_peaks.bed', gtffile = 'samples/gencode.vM33.primary_assembly.annotation.gtf'
+	output: annot = 'results/peaks_repr_filtered_annotations.txt'
+	conda:
+		'envs/homer_env.yml'
+	shell: 'annotatePeaks.pl {input.peaks} mm10 -gtf {input.gtffile} > {output.annot}'
+
+rule unzip_genome:
+	input: gz = 'samples/GRCm39.primary_assembly.genome.fa.gz'
+	output: fasta = 'samples/GRCm39.primary_assembly.genome.fa'
+	shell: 'gunzip -c {input.gz} > {output.fasta}'
+
+rule motifs:
+	input: peaks = 'results/filtered_peaks.bed', fasta = 'samples/GRCm39.primary_assembly.genome.fa'
+	output: motifs = directory('results/motifs_dir/')
+	conda:
+		'envs/homer_env.yml'
+	shell: 'findMotifsGenome.pl {input.peaks} {input.fasta} {output.motifs} -size 200'
